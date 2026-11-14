@@ -65,8 +65,8 @@ button{cursor:pointer}
 .sync[data-s="saving"] i{background:#F0B13A}
 .sync[data-s="local"] i{background:#8496AA}
 .sync[data-s="error"] i{background:#FF6B60}
-.tabs{display:flex;gap:2px;width:100%}
-.tabs a{font:600 17px/1 var(--display);letter-spacing:.07em;text-transform:uppercase;text-decoration:none;color:var(--head-muted);padding:12px 16px 11px;border-radius:8px 8px 0 0;display:flex;gap:8px;align-items:center}
+.tabs{display:flex;gap:2px;width:100%;overflow-x:auto;scrollbar-width:none}
+.tabs a{white-space:nowrap;font:600 17px/1 var(--display);letter-spacing:.07em;text-transform:uppercase;text-decoration:none;color:var(--head-muted);padding:12px 16px 11px;border-radius:8px 8px 0 0;display:flex;gap:8px;align-items:center}
 .tabs a b{font:600 12px/1 var(--body);letter-spacing:0;background:rgba(255,255,255,.12);padding:3px 7px;border-radius:20px;font-variant-numeric:tabular-nums}
 .tabs a[aria-current="page"]{background:var(--bg);color:var(--ink)}
 .tabs a[aria-current="page"] b{background:var(--accent-soft);color:var(--accent)}
@@ -177,6 +177,17 @@ main{max-width:1240px;margin:0 auto;padding:18px 16px 96px}
 .ib{width:38px;height:38px;border-radius:7px;border:1px solid var(--line);background:var(--surface);font-size:15px}
 .ib[disabled]{opacity:.35}
 
+/* configurações */
+.cfg{max-width:640px}
+.cfg .dlg-b{gap:18px}
+.cfg input[type=text],.cfg input[type=url]{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px;width:100%}
+.cfg .row{display:flex;flex-wrap:wrap;gap:8px}
+.help{margin:0;color:var(--muted);font-size:13px;max-width:62ch}
+.help ol{margin:6px 0 0;padding-left:20px}
+.target{display:flex;align-items:center;gap:10px;background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:14px}
+.target b{font-weight:700}
+.target a{margin-left:auto;font-weight:600;font-size:13px;color:var(--accent)}
+
 /* diálogos */
 dialog{border:0;border-radius:14px;padding:0;background:var(--surface);color:var(--ink);width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px);box-shadow:0 20px 60px rgba(0,0,0,.35)}
 dialog::backdrop{background:rgba(8,12,18,.6)}
@@ -234,6 +245,7 @@ dialog::backdrop{background:rgba(8,12,18,.6)}
       <a href="#escala" data-tab="escala">Escala</a>
       <a href="#pessoas" data-tab="pessoas">Pessoas <b id="nPeople">0</b></a>
       <a href="#setores" data-tab="setores">Setores <b id="nSectors">0</b></a>
+      <a href="#config" data-tab="config">Configurações</a>
     </nav>
   </div>
 </header>
@@ -297,6 +309,33 @@ dialog::backdrop{background:rgba(8,12,18,.6)}
       </form>
     </div>
   </section>
+
+  <!-- CONFIGURAÇÕES -->
+  <section class="view" id="v-config">
+    <div class="page-h">
+      <div>
+        <div class="eyebrow">Neste aparelho</div>
+        <h2>Configurações</h2>
+        <p>Cada pessoa escolhe o grupo para onde envia a escala. Isso fica salvo só neste aparelho e não muda o de ninguém.</p>
+      </div>
+    </div>
+    <form class="panel cfg" id="cfgForm">
+      <div class="dlg-b">
+        <div class="fld"><label for="cfgName">Nome do grupo</label>
+          <input type="text" id="cfgName" maxlength="60" autocomplete="off">
+          <small>Aparece na tela de envio para você conferir o destino.</small></div>
+        <div class="fld"><label for="cfgLink">Link de convite do grupo</label>
+          <input type="url" id="cfgLink" placeholder="https://chat.whatsapp.com/…" autocomplete="off" inputmode="url">
+          <small>Com o link, o botão de enviar copia a escala e abre direto o seu grupo. Sem o link, o WhatsApp pede para você escolher a conversa.</small></div>
+        <div class="help"><strong>Como pegar o link:</strong>
+          <ol><li>Abra o grupo no WhatsApp.</li><li>Toque no nome do grupo e depois em <em>Link do grupo</em> (ou <em>Convidar via link</em>).</li><li>Copie o link e cole aqui.</li></ol></div>
+      </div>
+      <div class="dlg-f">
+        <button class="btn ghost" type="button" data-act="cfg-reset" style="margin-right:auto">Voltar ao padrão</button>
+        <button class="btn pri" type="submit">Salvar</button>
+      </div>
+    </form>
+  </section>
 </main>
 
 <!-- pessoa -->
@@ -327,6 +366,7 @@ dialog::backdrop{background:rgba(8,12,18,.6)}
   <div class="dlg">
     <div class="dlg-h"><div class="eyebrow">WhatsApp</div><h2 id="sendTitle">Enviar escala</h2></div>
     <div class="dlg-b">
+      <div class="target" id="target"></div>
       <div class="fld"><span>Dias na mensagem</span><div class="daypick" id="dayPick"></div></div>
       <label class="check" for="optType"><input type="checkbox" id="optType" checked> Mostrar CLT / Freelancer ao lado do nome</label>
       <div class="chat"><div class="bubble" id="bubble"></div></div>
@@ -334,7 +374,8 @@ dialog::backdrop{background:rgba(8,12,18,.6)}
     <div class="dlg-f">
       <button class="btn ghost" type="button" data-act="close-dlg" style="margin-right:auto">Fechar</button>
       <button class="btn" type="button" data-act="copy-msg">Copiar texto</button>
-      <a class="btn wa" id="waLink" href="https://wa.me/" target="_blank" rel="noopener">Abrir no WhatsApp</a>
+      <a class="btn" id="pickLink" href="https://wa.me/" target="_blank" rel="noopener" hidden>Escolher outra conversa</a>
+      <a class="btn wa" id="waLink" href="https://wa.me/" target="_blank" rel="noopener" data-act="send-wa">Abrir no WhatsApp</a>
     </div>
   </div>
 </dialog>
@@ -351,7 +392,12 @@ var DEFAULT_SECTORS=[
 var WD=["Domingo","Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira","Sábado"];
 var WDS=["DOM","SEG","TER","QUA","QUI","SEX","SÁB"];
 var MO=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
-var LS="escala-setores-v1";
+var LS="escala-setores-v1",LSC="escala-config-v1",DEFAULT_GROUP="Hora extra operação";
+/* Grupo de destino: fica só neste aparelho, cada pessoa define o seu. */
+var cfg={name:DEFAULT_GROUP,link:""};
+function loadCfg(){try{var r=JSON.parse(localStorage.getItem(LSC)||"null");if(r){cfg.name=(r.name||"").trim()||DEFAULT_GROUP;cfg.link=r.link||""}}catch(e){}}
+function saveCfg(){try{localStorage.setItem(LSC,JSON.stringify(cfg));return true}catch(e){return false}}
+function validLink(s){return /^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]+/.test(s)}
 
 var state={sectors:DEFAULT_SECTORS.slice(),people:{},days:{}};
 var db=null, pend=new Map(), busy=new Set(), saveFailed=false;
@@ -628,19 +674,28 @@ function renderSend(){
   $("dayPick").innerHTML=days.map(function(k){var x=parse(k);return '<label for="sd-'+k+'"><input type="checkbox" id="sd-'+k+'" data-send="'+k+'"'+(sendDays.indexOf(k)>=0?" checked":"")+'>'+WD[x.getDay()].replace("-feira","")+' '+shortDate(k)+'</label>'}).join("");
   var msg=sendDays.length?fullMessage():"";
   $("bubble").innerHTML=msg?esc(msg).replace(/\*([^*\n]+)\*/g,"<b>$1</b>").replace(/_([^_\n]+)_/g,"<i>$1</i>"):"Escolha pelo menos um dia.";
-  $("waLink").href="https://wa.me/?text="+encodeURIComponent(msg);
-  $("waLink").style.pointerEvents=msg?"":"none";$("waLink").style.opacity=msg?"":".45";
+  var pick="https://wa.me/?text="+encodeURIComponent(msg),hasLink=!!cfg.link;
+  $("target").innerHTML='<span>Enviar para</span> <b>'+esc(cfg.name||DEFAULT_GROUP)+'</b><a href="#config" data-act="goto-config">Trocar</a>';
+  $("waLink").href=hasLink?cfg.link:pick;
+  $("waLink").textContent=hasLink?"Copiar e abrir o grupo":"Abrir no WhatsApp";
+  $("pickLink").hidden=!hasLink;$("pickLink").href=pick;
+  [$("waLink"),$("pickLink")].forEach(function(a){a.style.pointerEvents=msg?"":"none";a.style.opacity=msg?"":".45"});
 }
 
 /* ---------- navegação e render ---------- */
-function currentView(){var h=(location.hash||"").slice(1);return h==="pessoas"||h==="setores"?h:"escala"}
+function currentView(){var h=(location.hash||"").slice(1);return h==="pessoas"||h==="setores"||h==="config"?h:"escala"}
+function renderConfig(){
+  if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest("#cfgForm"))return;
+  $("cfgName").value=cfg.name;$("cfgLink").value=cfg.link;
+}
 function renderAll(){
   var v=currentView();
-  ["escala","pessoas","setores"].forEach(function(n){$("v-"+n).classList.toggle("on",n===v)});
+  ["escala","pessoas","setores","config"].forEach(function(n){$("v-"+n).classList.toggle("on",n===v)});
   Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"),function(a){if(a.dataset.tab===v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   $("nPeople").textContent=Object.keys(state.people).length;$("nSectors").textContent=state.sectors.length;
   if(v==="escala"){renderStrip();renderDay();renderRoster()}
   else if(v==="pessoas")renderPeople();
+  else if(v==="config")renderConfig();
   else renderSectors();
   if($("sendDlg").open)renderSend();
 }
@@ -677,6 +732,17 @@ document.addEventListener("click",function(ev){
     if(!countDay(sel)){toast("Escale pelo menos uma pessoa neste dia antes de enviar.");return}
     sendDays=[sel];renderSend();$("sendDlg").showModal();
   }
+  else if(act==="goto-config"){$("sendDlg").close()}
+  else if(act==="cfg-reset"){cfg={name:DEFAULT_GROUP,link:""};saveCfg();$("cfgName").value=cfg.name;$("cfgLink").value="";toast("Voltou ao grupo padrão: "+DEFAULT_GROUP)}
+  else if(act==="send-wa"){
+    /* O link do grupo não leva texto: copia a escala antes de abrir o grupo. */
+    if(!sendDays.length){ev.preventDefault();return}
+    if(cfg.link){
+      var m=fullMessage(),a=$("copyArea");a.value=m;a.select();
+      try{document.execCommand("copy");toast("Escala copiada. Cole no grupo.")}catch(e){}
+      try{navigator.clipboard.writeText(m)}catch(e){}
+    }
+  }
   else if(act==="copy-msg"){
     var msg=fullMessage();if(!sendDays.length)return;
     var done=function(){toast("Texto copiado. Cole no WhatsApp.")};
@@ -708,6 +774,14 @@ document.addEventListener("keydown",function(ev){if(ev.key==="Enter"&&ev.target.
 $("rosterSearch").addEventListener("input",renderRoster);
 $("peopleSearch").addEventListener("input",renderPeople);
 $("personForm").addEventListener("submit",submitPerson);
+$("cfgForm").addEventListener("submit",function(ev){
+  ev.preventDefault();
+  var link=$("cfgLink").value.trim();
+  if(link&&!validLink(link)){toast("O link precisa começar com https://chat.whatsapp.com/");$("cfgLink").focus();return}
+  cfg.name=$("cfgName").value.replace(/\s+/g," ").trim()||DEFAULT_GROUP;cfg.link=link;
+  $("cfgName").value=cfg.name;
+  toast(saveCfg()?"Salvo. Envios vão para: "+cfg.name:"Não consegui salvar neste aparelho.");
+});
 $("pName").addEventListener("keydown",function(ev){if(editing&&ev.key==="Enter"){ev.preventDefault();$("personForm").requestSubmit()}});
 $("sectorForm").addEventListener("submit",function(ev){
   ev.preventDefault();var name=$("newSector").value.replace(/\s+/g," ").trim();if(!name)return;
@@ -716,7 +790,7 @@ $("sectorForm").addEventListener("submit",function(ev){
 window.addEventListener("hashchange",function(){document.body.classList.remove("roster-open");renderAll()});
 
 /* ---------- início ---------- */
-loadLocal();
+loadLocal();loadCfg();
 (function(){var t=parse(TODAY),i,d;for(i=0;i<8;i++){d=addDays(t,i);if(d.getDay()===0||d.getDay()===6||nationalHoliday(iso(d))){sel=iso(d);break}}if(!sel)sel=TODAY})();
 renderAll();
 connect();
